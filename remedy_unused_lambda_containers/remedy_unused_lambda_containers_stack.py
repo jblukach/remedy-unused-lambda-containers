@@ -1,12 +1,12 @@
 from aws_cdk import (
+    CustomResource,
     Duration,
     RemovalPolicy,
     Stack,
-    aws_events as _events,
-    aws_events_targets as _targets,
     aws_iam as _iam,
     aws_lambda as _lambda,
-    aws_logs as _logs
+    aws_logs as _logs,
+    custom_resources as custom
 )
 
 from constructs import Construct
@@ -60,14 +60,12 @@ class RemedyUnusedLambdaContainersStack(Stack):
             removal_policy = RemovalPolicy.DESTROY
         )
 
-        event = _events.Rule(
-            self, 'event',
-            schedule = _events.Schedule.cron(
-                minute = '0',
-                hour = '11',
-                month = '*',
-                week_day = '*',
-                year = '*'
-            )
+        provider = custom.Provider(
+            self, 'provider',
+            on_event_handler = remedy
         )
-        event.add_target(_targets.LambdaFunction(remedy))
+
+        resource = CustomResource(
+            self, 'resource',
+            service_token = provider.service_token
+        )
